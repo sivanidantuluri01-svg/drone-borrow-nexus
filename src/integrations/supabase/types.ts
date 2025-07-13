@@ -14,7 +14,146 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      borrow_requests: {
+        Row: {
+          approved_by: string | null
+          condition_on_return: string | null
+          created_at: string
+          drone_id: string
+          end_date: string
+          forwarded: boolean
+          id: string
+          purpose: string
+          remarks: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_by?: string | null
+          condition_on_return?: string | null
+          created_at?: string
+          drone_id: string
+          end_date: string
+          forwarded?: boolean
+          id?: string
+          purpose: string
+          remarks?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_by?: string | null
+          condition_on_return?: string | null
+          created_at?: string
+          drone_id?: string
+          end_date?: string
+          forwarded?: boolean
+          id?: string
+          purpose?: string
+          remarks?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "borrow_requests_drone_id_fkey"
+            columns: ["drone_id"]
+            isOneToOne: false
+            referencedRelation: "drones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drones: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          last_condition: string | null
+          model: string | null
+          name: string
+          status: Database["public"]["Enums"]["drone_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          last_condition?: string | null
+          model?: string | null
+          name: string
+          status?: Database["public"]["Enums"]["drone_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          last_condition?: string | null
+          model?: string | null
+          name?: string
+          status?: Database["public"]["Enums"]["drone_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +162,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      drone_status: "available" | "borrowed" | "damaged" | "maintenance"
+      request_status: "pending" | "approved" | "rejected" | "returned"
+      user_role: "user" | "admin" | "superadmin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +291,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      drone_status: ["available", "borrowed", "damaged", "maintenance"],
+      request_status: ["pending", "approved", "rejected", "returned"],
+      user_role: ["user", "admin", "superadmin"],
+    },
   },
 } as const
