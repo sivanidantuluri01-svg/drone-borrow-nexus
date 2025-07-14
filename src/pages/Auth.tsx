@@ -25,19 +25,37 @@ export default function Auth() {
     const password = formData.get('password') as string;
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
+      // Get user profile to determine role-based redirect
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', data.user?.id)
+        .single();
+
       toast({
         title: "Success!",
         description: "You have been signed in successfully.",
       });
       
-      navigate('/dashboard');
+      // Redirect based on user role
+      const role = profileData?.role || 'user';
+      switch (role) {
+        case 'superadmin':
+          navigate('/superadmin-dashboard');
+          break;
+        case 'admin':
+          navigate('/admin-dashboard');
+          break;
+        default:
+          navigate('/user-dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Error",
