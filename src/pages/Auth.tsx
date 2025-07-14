@@ -5,14 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DroneScene } from '@/components/3D/DroneScene';
-import { Plane, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { Plane, Mail, Lock, User, ArrowLeft, Shield, Crown, UserCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'user' | 'admin' | 'superadmin'>('user');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -32,21 +34,29 @@ export default function Auth() {
 
       if (error) throw error;
 
-      // Get user profile to determine role-based redirect
-      const { data: profileData } = await supabase
+      // Get user profile to verify role
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, name')
         .eq('user_id', data.user?.id)
         .single();
 
+      if (profileError) {
+        throw new Error('Profile not found. Please contact administrator.');
+      }
+
+      // Verify the selected role matches the user's actual role
+      if (profileData.role !== selectedRole) {
+        throw new Error(`Access denied. You don't have ${selectedRole} privileges.`);
+      }
+
       toast({
         title: "Success!",
-        description: "You have been signed in successfully.",
+        description: `Welcome back, ${profileData.name}! Signed in as ${selectedRole}.`,
       });
       
-      // Redirect based on user role
-      const role = profileData?.role || 'user';
-      switch (role) {
+      // Redirect based on verified role
+      switch (profileData.role) {
         case 'superadmin':
           navigate('/superadmin-dashboard');
           break;
@@ -58,7 +68,7 @@ export default function Auth() {
       }
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: "Authentication Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -82,7 +92,7 @@ export default function Auth() {
         password,
         options: {
           data: { name },
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${window.location.origin}/user-dashboard`
         }
       });
 
@@ -90,16 +100,34 @@ export default function Auth() {
 
       toast({
         title: "Account created!",
-        description: "Please check your email to verify your account.",
+        description: "Please check your email to verify your account. New accounts are created with user role by default.",
       });
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: "Registration Failed",
         description: error.message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'user': return <UserCheck className="w-4 h-4" />;
+      case 'admin': return <Shield className="w-4 h-4" />;
+      case 'superadmin': return <Crown className="w-4 h-4" />;
+      default: return <UserCheck className="w-4 h-4" />;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'user': return 'text-blue-600';
+      case 'admin': return 'text-orange-600';
+      case 'superadmin': return 'text-purple-600';
+      default: return 'text-blue-600';
     }
   };
 
@@ -137,6 +165,40 @@ export default function Auth() {
                 </TabsList>
                 
                 <TabsContent value="signin" className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Select Role</Label>
+                      <Select value={selectedRole} onValueChange={(value: 'user' | 'admin' | 'superadmin') => setSelectedRole(value)}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Choose your role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="w-4 h-4 text-blue-600" />
+                              <span>User</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="admin">
+                            <div className="flex items-center gap-2">
+                              <Shield className="w-4 h-4 text-orange-600" />
+                              <span>Administrator</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="superadmin">
+                            <div className="flex items-center gap-2">
+                              <Crown className="w-4 h-4 text-purple-600" />
+                              <span>Super Administrator</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Select the role that matches your account privileges
+                      </p>
+                    </div>
+                  </div>
+
                   <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="signin-email">Email</Label>
@@ -173,7 +235,10 @@ export default function Auth() {
                       className="w-full bg-gradient-primary hover:scale-105 transition-transform"
                       disabled={loading}
                     >
-                      {loading ? "Signing in..." : "Sign In"}
+                      <div className="flex items-center gap-2">
+                        {getRoleIcon(selectedRole)}
+                        {loading ? "Signing in..." : `Sign In as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`}
+                      </div>
                     </Button>
                   </form>
                 </TabsContent>
